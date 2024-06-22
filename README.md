@@ -25,7 +25,9 @@ https://github.com/AlexGyver/Bitmaper/releases/latest
 - `GyverGFX BitPack` - сжатый формат*: [heightLSB, heightMSB, lenLSB, lenMSB, data_0, ...data_n]
 - `GyverGFX Image` - программа выберет лёгкий между BitMap и BitPack: [0 map | 1 pack, x, x, x, x, data_0, ...data_n]
 
-* На изображениях со сплошными участками BitPack может быть в разы эффективнее обычного BitMap. На изображениях с dithering работает неэффективно.
+\* На изображениях со сплошными участками BitPack может быть в разы эффективнее обычного BitMap. На изображениях с dithering работает неэффективно.
+
+> Как кодирует BitPack: Младший бит - состояние пикселя, остальные - количество. Сканирование идёт столбцами сверху вниз слева направо. Один чанк - 6 бит (состояние + 5 бит количества), 4 чанка пакуются в три байта как aaaaaabb, bbbbcccc, ccdddddd
 
 ### Фильтры
 - Inverse - инвертировать цвета
