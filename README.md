@@ -4,9 +4,7 @@
 ## Как запустить
 - Веб-версия - https://alexgyver.github.io/Bitmaper/, можно установить как веб-приложение
 - Релиз [HTML версия](https://github.com/AlexGyver/Bitmaper/releases/latest/download/bitmaper.html) - открывать в браузере
-- Релиз [.h версия](https://github.com/AlexGyver/Bitmaper/releases/latest/download/bitmaper.h) - для вставки в ESP проект с сервером
-
-https://github.com/AlexGyver/Bitmaper/releases/latest
+- Релиз [.h версия](https://github.com/AlexGyver/Bitmaper/releases/latest/download/bitmaper.h) - для вставки в ESP проект с сервером. Смотри пример в папке arduino
 
 ## Как собрать из исходников
 - Установить [VS Code](https://code.visualstudio.com/download)

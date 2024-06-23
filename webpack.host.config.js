@@ -7,7 +7,6 @@ const HtmlWebpackPlugin = require('html-webpack-plugin');
 const TerserPlugin = require("terser-webpack-plugin");
 const MiniCssExtractPlugin = require("mini-css-extract-plugin");
 const CssMinimizerPlugin = require('css-minimizer-webpack-plugin');
-const WebpackShellPluginNext = require('webpack-shell-plugin-next');
 const CopyPlugin = require("copy-webpack-plugin");
 
 module.exports = {
@@ -55,9 +54,6 @@ module.exports = {
         }),
         new MiniCssExtractPlugin({
             filename: 'style.css',
-        }),
-        new WebpackShellPluginNext({
-            onBuildEnd: { scripts: ['node gzip.js'] }
         }),
         new webpack.DefinePlugin({ USE_SW: JSON.stringify(true) }),
         new CopyPlugin({
