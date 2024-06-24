@@ -1,5 +1,72 @@
+import { HEXtoRGB } from "./utils";
+
+//#region processes
+export const processes = {
+    names: [
+        '1x pix/byte',
+        '8x Horizontal',
+        '8x Vertical',
+        'GyverGFX Image',
+        'GyverGFX BitMap',
+        'GyverGFX BitPack',
+        'Grayscale',
+        'RGB888',
+        'RGB565',
+        'RGB233',
+    ],
+    prefix: [
+        'const uint8_t',
+        'const uint8_t',
+        'const uint8_t',
+        'gfximage_t',
+        'gfxmap_t',
+        'gfxpack_t',
+        'const uint8_t',
+        'const uint8_t',
+        'const uint16_t',
+        'const uint8_t',
+    ],
+    extension: [
+        '1p',
+        '8h',
+        '8v',
+        'img',
+        'map',
+        'pack',
+        'gray',
+        'rgb888',
+        'rgb565',
+        'rgb233',
+    ],
+    func: [
+        make1bit,
+        make8horiz,
+        make8vert,
+        makeImage,
+        makeBitmap,
+        makeBitpack,
+        makeGray,
+        makeRGB888,
+        makeRGB565,
+        makeRGB233,
+    ],
+    mult: [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        2,
+        1,
+    ]
+}
+
+//#region makers
 function make1bit(m) {
-    return [...m.matrix];
+    return m.matrix.map(x => x ? 1 : 0);
 }
 function make8horiz(m) {
     let data = [];
@@ -101,6 +168,39 @@ function makeBitpack(m) {
 function makeBitmap(m) {
     return [(m.W & 0xff), ((m.W >> 8) & 0xff), (m.H & 0xff), ((m.H >> 8) & 0xff)].concat(make8vert_row(m));
 }
+function makeImage(m) {
+    let mapsize = Math.ceil(m.H / 8) * m.W + 4;
+    let pack = makeBitpack(m);
+    return (mapsize <= pack.length) ? [0].concat(makeBitmap(m)) : [1].concat(pack);
+}
+function makeGray(m) {
+    return [...m.matrix];
+}
+function makeRGB888(m) {
+    let data = [];
+    for (let hex of m.matrix) {
+        data.push(...HEXtoRGB(hex));
+    }
+    return data;
+}
+function makeRGB565(m) {
+    let data = [];
+    for (let hex of m.matrix) {
+        let rgb = HEXtoRGB(hex);
+        data.push(((rgb[0] & 0b11111000) << 8) | ((rgb[1] & 0b11111100) << 3) | (rgb[0] >> 3));
+    }
+    return data;
+}
+function makeRGB233(m) {
+    let data = [];
+    for (let hex of m.matrix) {
+        let rgb = HEXtoRGB(hex);
+        data.push((rgb[0] & 0b11000000) | ((rgb[1] & 0b11100000) >> 2) | ((rgb[2] & 0b11100000) >> 5));
+    }
+    return data;
+}
+
+//#region export
 function makeCodeArray(data, width = 16) {
     let code = '';
     let i = 0;
@@ -112,32 +212,8 @@ function makeCodeArray(data, width = 16) {
     return code;
 }
 
-function makeData(m, type) {
-    switch (type) {
-        case 0: return make1bit(m);
-        case 1: return make8horiz(m);
-        case 2: return make8vert(m);
-        case 3: {
-            let mapsize = Math.ceil(m.H / 8) * m.W + 4;
-            let pack = makeBitpack(m);
-            return (mapsize <= pack.length) ? [0].concat(makeBitmap(m)) : [1].concat(pack)
-        }
-        case 4: return makeBitmap(m);
-        case 5: return makeBitpack(m);
-    }
-}
-
-export const processNames = [
-    '1x pix/byte',
-    '8x Horizontal',
-    '8x Vertical',
-    'GyverGFX Image',
-    'GyverGFX BitMap',
-    'GyverGFX BitPack',
-];
-
 export function makeBlob(m, type) {
-    let data = makeData(m, type);
+    let data = processes.func[type](m);
     let bytes = Int8Array.from(data);
     return new Blob([bytes], { type: "application/octet-stream" });
 }
@@ -146,26 +222,22 @@ export function downloadBin(m, type, name) {
     let blob = makeBlob(m, type);
     let link = document.createElement('a');
     link.href = window.URL.createObjectURL(blob);
-    switch (type) {
-        case 0:
-        case 1:
-        case 2: name += '.bin'; break;
-        case 3: name += '.img'; break;
-        case 4: name += '.map'; break;
-        case 5: name += '.pack'; break;
-    }
+    name += '.' + processes.extension[type];
     link.download = name;
     link.click();
 }
 
 export function downloadCode(m, type, name) {
     let code = makeCode(m, type, name);
-    let str = '#pragma once\n' +
-        '#include <Arduino.h>\n' +
-        '#include <GyverGFX.h>\n\n' +
-        `// ${name} (${code.size} bytes)\n` +
-        `// ${processNames[type]}\n\n` +
-        code.code;
+    let str = `#pragma once
+#include <Arduino.h>
+${(type >= 3 && type <= 5) ? '#include <GyverGFX.h>' : ''}
+
+// ${name} (${code.size} bytes)
+// ${processes.names[type]}
+
+`;
+    str += code.code;
 
     let enc = new TextEncoder();
     let bytes = enc.encode(str);
@@ -178,36 +250,9 @@ export function downloadCode(m, type, name) {
 }
 
 export function makeCode(m, type, name) {
-    let code = '';
-
-    switch (type) {
-        case 0:  // '1x pix/byte'
-            code += `const uint8_t ${name}_${m.W}x${m.H}[] PROGMEM = {`;
-            break;
-
-        case 1:  // '8x Horizontal (MSB left)'
-            code += `const uint8_t ${name}_${m.W}x${m.H}[] PROGMEM = {`;
-            break;
-
-        case 2:  // '8x Vertical (MSB bottom)'
-            code += `const uint8_t ${name}_${m.W}x${m.H}[] PROGMEM = {`;
-            break;
-
-        case 3:  // 'GyverGFX Image'
-            code += `gfximage_t ${name}_${m.W}x${m.H}[] PROGMEM = {`;
-            break;
-
-        case 4:  // 'GyverGFX BitMap'
-            code += `gfxmap_t ${name}_${m.W}x${m.H}[] PROGMEM = {`;
-            break;
-
-        case 5:  // 'GyverGFX BitPack'
-            code += `gfxpack_t ${name}_${m.W}x${m.H}[] PROGMEM = {`;
-            break;
-    }
-
-    let data = makeData(m, type);
+    let data = processes.func[type](m);
+    let code = `${processes.prefix[type]} ${name}_${m.W}x${m.H}[] PROGMEM = {`;
     code += makeCodeArray(data, 24);
     code += '\n};'
-    return { code: code, size: data.length };
+    return { code: code, size: data.length * processes.mult[type] };
 }

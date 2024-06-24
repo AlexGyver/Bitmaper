@@ -1,4 +1,5 @@
 import CyrillicToTranslit from 'cyrillic-to-translit-js';
+import { RGBtoHEX } from './utils';
 
 export default class ImageLoader {
     name = '';
@@ -65,9 +66,9 @@ export default class ImageLoader {
         }
     }
 
-    show(cvbase, angle = 0) {
+    show(cvbase, angle, background, filters) {
         if (!this.image) return;
-        this._render(cvbase.cv, angle);
+        this._render(cvbase.cv, angle, background, filters);
         cvbase.grid();
     }
 
@@ -82,38 +83,40 @@ export default class ImageLoader {
         this.offset.w = w / cvbase.cv.width;
     }
 
-    render(cvbase, angle = 0, inverse = false) {
+    render(cvbase, angle, background, filters) {
         if (!this.image) return;
         if (this.first) {
             this.first = false;
             this.fit(cvbase);
         }
 
+        // copy of display canvas
         let cv = document.createElement("canvas");
         cv.width = cvbase.cv.width;
         cv.height = cvbase.cv.height;
         let cx = cv.getContext("2d");
-        cx.fillStyle = inverse ? 'white' : 'black';
+        cx.fillStyle = background ? 'white' : 'black';
         cx.fillRect(0, 0, cv.width, cv.height);
-        this._render(cv, angle);
+        this._render(cv, angle, background, filters);
 
+        // pixel to pixel output
         let cv2 = document.createElement("canvas");
         cv2.width = cvbase.W;
         cv2.height = cvbase.H;
         let cx2 = cv2.getContext("2d");
+
         cx2.drawImage(cv, 0, 0, cv2.width, cv2.height);
 
         cvbase.clear();
         let data = cx2.getImageData(0, 0, cvbase.W, cvbase.H).data;
         for (let i = 0, j = 0; i < data.length; i += 4, j++) {
-            if (data[i + 3]) {
-                let val = Math.round((data[i] + data[i + 1] + data[i + 2]) / 3);
-                cvbase.matrix[j] = inverse ? 255 - val : val;
+            if (data[i + 3]) { // alpha
+                cvbase.matrix[j] = RGBtoHEX(data[i], data[i + 1], data[i + 2]);
             }
         }
     }
 
-    _render(dest, angle) {
+    _render(dest, angle, background, filters) {
         let cv = document.createElement("canvas");
         let w = dest.width * this.offset.w;
         let h = w * this.image.height / this.image.width;
@@ -121,13 +124,16 @@ export default class ImageLoader {
         cv.width = hypot;
         cv.height = hypot;
         let cx = cv.getContext("2d");
+
         cx.save();
         cx.translate(hypot / 2, hypot / 2);
         cx.rotate(-angle * 0.0174533);
+        cx.filter = `invert(${filters.invert ?? 0}) brightness(${filters.brightness ?? 0}%) contrast(${filters.contrast ?? 0}%) saturate(${filters.saturate ?? 0}%) grayscale(${filters.grayscale ?? 0}%) blur(${(filters.blur ?? 0) * hypot / 64}px)`;
         cx.drawImage(this.image, -w / 2, -h / 2, w, h);
         cx.restore();
 
         let cxd = dest.getContext("2d");
+        cxd.fillStyle = background ? 'white' : 'black';
         cxd.fillRect(0, 0, dest.width, dest.height);
         cxd.drawImage(
             cv,

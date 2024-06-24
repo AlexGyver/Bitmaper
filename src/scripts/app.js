@@ -2,9 +2,9 @@ import QuickSettings from './quicksettings'
 import CanvasMatrix from './canvas'
 import Matrix from './matrix';
 import ImageLoader from './imageloader';
-import * as filt from './filters';
 import * as proc from './processor';
 import Timer from './timer';
+import { dither, edges_median, edges_simple, edges_sobel, threshold } from './filters';
 
 let base_ui, filt_ui;
 const preview_delay = 400;
@@ -15,12 +15,12 @@ let timer = new Timer();
 
 const displayModes = {
     labels: [
-        'OLED',
+        'Screen',
         'Paper'
     ],
     values: [
-        { on: '#478be6', off: 'black', inv: false },
-        { on: 'black', off: 'white', inv: true }
+        { active: '#478be6', back: 0 },
+        { active: '#000000', back: 1 }
     ]
 };
 
@@ -58,19 +58,37 @@ function fit_h() {
 
 function update_h() {
     if (image.image) {
-        let inv = displayModes.values[filt_ui.getValue("Display Style").index].inv ^ filt_ui.getValue("Inverse");
-        image.render(canvas, base_ui.getValue("Rotate"), inv);
+        let mode = base_ui.getValue("Mode").index;
 
-        let gamma = filt_ui.getValue("Gamma");
-        let sobel = filt_ui.getValue("Sobel Edges");
-        if (gamma != 1.0) filt.gamma(canvas, gamma);
-        filt.brightContrast(canvas, filt_ui.getValue("Brightness"), filt_ui.getValue("Contrast"));
-        if (filt_ui.getValue("Blur")) filt.blur(canvas);
-        if (filt_ui.getValue("Edges")) filt.edges(canvas);
-        if (sobel) filt.sobel(canvas, sobel);
-        if (filt_ui.getValue("Dither")) filt.dither(canvas);
-        filt.threshold(canvas, filt_ui.getValue("Threshold") * 2.56);
-        if (filt_ui.getValue("Median Edges")) filt.edges_median(canvas);
+        image.render(
+            canvas,
+            base_ui.getValue("Rotate"),
+            filt_ui.getValue("Invert Background"),
+            {
+                invert: displayModes.values[filt_ui.getValue("Display Style").index].back ^ filt_ui.getValue("Invert"),
+                brightness: filt_ui.getValue("Brightness"),
+                contrast: filt_ui.getValue("Contrast"),
+                saturate: filt_ui.getValue("Saturate"),
+                blur: filt_ui.getValue("Blur"),
+                grayscale: mode == 2 ? 0 : 100,
+            }
+        );
+
+        // grayscale
+        if (mode != 2) {
+            for (let i = 0; i < canvas.matrix.length; i++) {
+                canvas.matrix[i] &= 0xff;
+            }
+        }
+
+        if (mode <= 1) {
+            if (filt_ui.getValue("Edges")) edges_simple(canvas.matrix, canvas.W, canvas.H);
+            let sobel = filt_ui.getValue("Sobel Edges");
+            if (sobel) edges_sobel(canvas.matrix, canvas.W, canvas.H, sobel);
+            if (filt_ui.getValue("Dither")) dither(canvas.matrix, canvas.W, canvas.H);
+            if (mode == 0) threshold(canvas.matrix, filt_ui.getValue("Threshold") * 2.56);
+            if (filt_ui.getValue("Median Edges")) edges_median(canvas.matrix, canvas.W, canvas.H);
+        }
     }
     render();
 }
@@ -83,24 +101,45 @@ function render() {
     base_ui.setValue("Code", result.code);
 
     let info = `${canvas.W}x${canvas.H} (${result.size} bytes)<br>`;
-    info += Math.round(canvas.matrix.filter(v => v == 1).length / canvas.matrix.length * 100) + '% pixels on'
+    info += Math.round(canvas.matrix.filter(v => v).length / canvas.matrix.length * 100) + '% pixels on'
     base_ui.setValue("Result", info);
+}
+
+function show() {
+    image.show(canvas,
+        base_ui.getValue("Rotate"),
+        displayModes.values[filt_ui.getValue("Display Style").index].back ^ filt_ui.getValue("Invert Background"),
+        {
+            invert: filt_ui.getValue("Invert"),
+        }
+    );
 }
 
 function display_h() {
     let colors = displayModes.values[filt_ui.getValue("Display Style").index];
-    canvas.setColors(colors.on, colors.off);
+    canvas.setColors(colors.active, colors.back);
+    update_h();
+}
+
+function mode_h() {
+    canvas.setMode(base_ui.getValue("Mode").index);
     update_h();
 }
 
 function reset_h() {
     base_ui.setValue("Rotate", 0);
-    filt_ui.setValue("Inverse", 0);
-    filt_ui.setValue("Brightness", 0);
-    filt_ui.setValue("Contrast", 1);
-    filt_ui.setValue("Threshold", 50);
+    filt_ui.setValue("Invert Background", 0);
+    filt_ui.setValue("Invert", 0);
+    filt_ui.setValue("Brightness", 100);
+    filt_ui.setValue("Contrast", 100);
+    filt_ui.setValue("Saturate", 100);
+    filt_ui.setValue("Blur", 0);
     filt_ui.setValue("Edges", 0);
+    filt_ui.setValue("Sobel Edges", 0);
     filt_ui.setValue("Dither", 0);
+    filt_ui.setValue("Threshold", 50);
+    filt_ui.setValue("Median Edges", 0);
+    filt_ui.setValue("Editor", 0);
     editor.clear();
 }
 
@@ -129,7 +168,7 @@ function drag_h(v, button) {
     if (filt_ui.getValue("Preview") || v.release) {
         update_h();
     } else {
-        image.show(canvas, base_ui.getValue("Rotate"));
+        show();
     }
 }
 function wheel_h(v) {
@@ -143,7 +182,7 @@ function wheel_h(v) {
     if (filt_ui.getValue("Preview")) {
         update_h();
     } else {
-        image.show(canvas, base_ui.getValue("Rotate"));
+        show();
         timer.start(update_h, preview_delay);
     }
 }
@@ -153,7 +192,7 @@ function rotate_h() {
     if (filt_ui.getValue("Preview")) {
         update_h();
     } else {
-        image.show(canvas, base_ui.getValue("Rotate"));
+        show();
         timer.start(update_h, preview_delay);
     }
 }
@@ -201,7 +240,7 @@ document.addEventListener("DOMContentLoaded", () => {
     cv_cont.append(cv_inner);
     document.body.append(exp_block, cv_cont);
 
-    canvas = new CanvasMatrix(cv, click_h, drag_h, wheel_h, displayModes.values[0].on, displayModes.values[0].off);
+    canvas = new CanvasMatrix(cv, click_h, drag_h, wheel_h, displayModes.values[0].active, displayModes.values[0].back);
 
     let buttons = { "Copy": copy_h, ".h": saveH_h, ".bin": saveBin_h };
     if (window.location.hostname.match(/^((25[0-5]|(2[0-4]|1[0-9]|[1-9]|)[0-9])(\.(?!$)|$)){4}$/)) {
@@ -218,7 +257,8 @@ document.addEventListener("DOMContentLoaded", () => {
         .addNumber("Height", 1, 10000, 64, 1, resize_h)
         .addButton("Fit", fit_h)
         .addRange('Rotate', -180, 180, 0, 5, rotate_h)
-        .addDropDown("Process", proc.processNames, update_h)
+        .addDropDown("Mode", ['Mono', 'Grayscale', 'RGB'], mode_h)
+        .addDropDown("Process", proc.processes.names, update_h)
         .addHTML("Result", "")
         .addTextArea("Code")
         .addButtons(buttons)
@@ -231,12 +271,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
     filt_ui = QuickSettings.create(0, 0, "Filter", exp_block)
         .addDropDown("Display Style", displayModes.labels, display_h)
+        .addBoolean("Invert Background", 0, update_h)
         .addBoolean("Preview", 1)
-        .addBoolean("Inverse", 0, update_h)
-        .addRange('Gamma', 0.9, 1.2, 1.0, 0.005, update_h)
-        .addRange('Brightness', -128, 128, 0, 1, update_h)
-        .addRange('Contrast', 0, 5.0, 1.0, 0.1, update_h)
-        .addBoolean("Blur", 0, update_h)
+        .addBoolean("Invert", 0, update_h)
+        .addRange('Brightness', 0, 250, 100, 5, update_h)
+        .addRange('Contrast', 0, 250, 100, 5, update_h)
+        .addRange('Saturate', 0, 250, 100, 5, update_h)
+        .addRange('Blur', 0, 1, 0, 0.05, update_h)
         .addBoolean("Edges", 0, update_h)
         .addRange('Sobel Edges', 0, 1, 0, 0.05, update_h)
         .addBoolean("Dither", 0, update_h)
@@ -261,13 +302,18 @@ PROCESS
 - GyverGFX BitMap - 8 пикселей вертикально (MSB снизу), строками слева направо сверху вниз: [widthLSB, widthMSB, heightLSB, heightMSB, data_0, ...data_n]
 - GyverGFX BitPack - сжатый формат*: [heightLSB, heightMSB, lenLSB, lenMSB, data_0, ...data_n]
 - GyverGFX Image - программа выберет лёгкий между BitMap и BitPack: [0 map | 1 pack, x, x, x, x, data_0, ...data_n]
+- Gray - 1 пиксель в байте, оттенки серого
+- RGB888 - 1 пиксель на 3 байта (24 бит RGB) [r0, g0, b0, ...]
+- RGB565 - 1 пиксель на 2 байта (16 бит RGB) [rrrrrggggggbbbbb] тип uint16
+- RGB233 - 1 пиксель в байте (8 бит RGB) [rrgggbbb]
 * На изображениях со сплошными участками BitPack может быть в разы эффективнее обычного BitMap. На изображениях с dithering работает неэффективно.
 
 ФИЛЬТРЫ
-- Inverse - инвертировать цвета
-- Gamma - логарифмическая яркость
+- Invert Background - инвертировать фон
+- Invert - инвертировать изображение
 - Brightness - яркость
 - Contrast - контраст
+- Saturate - насыщенность
 - Blur - размытие
 - Edges - усиление краёв
 - Sobel Edges - выделение краёв с настройкой интенсивности

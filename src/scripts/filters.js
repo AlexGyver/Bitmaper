@@ -1,118 +1,81 @@
-import Matrix from "./matrix";
+import { constrain, round } from "./utils";
 
-/**
- * @param {Matrix} mx 
- */
-export function threshold(mx, val) {
-    mx.matrix = mx.matrix.map(x => x < val ? 0 : 1)
+export function threshold(arr, val) {
+    for (let i = 0; i < arr.length; i++) {
+        arr[i] = (arr[i] < val) ? 0 : 255;
+    }
+    return arr;
 }
 
-/**
- * @param {Matrix} mx 
- */
-export function inverse(mx) {
-    mx.matrix = mx.matrix.map(x => 255 - x)
-}
+export function dither(arr, w, h) {
+    for (let y = 0; y < h; y++) {
+        for (let x = 0; x < w; x++) {
+            let idx = y * w + x;
+            let col = (arr[idx] < 128 ? 0 : 255);
+            let err = arr[idx] - col;
+            arr[idx] = col;
+            if (x + 1 < w) arr[idx + 1] += (err * 7) >> 4;
+            if (y + 1 == h) continue;
 
-/**
- * @param {Matrix} mx 
- */
-export function brightContrast(mx, bright, contr) {
-    mx.matrix = mx.matrix.map(x => {
-        x = (x * contr + bright);
-        return (x < 0) ? 0 : ((x > 255) ? 255 : x);
-    });
-}
-
-/**
- * @param {Matrix} mx 
- */
-export function gamma(mx, val) {
-    mx.matrix = mx.matrix.map(x => Math.min(255, Math.pow(x, val)));
-}
-
-/**
- * @param {Matrix} mx 
- */
-export function dither(mx) {
-    for (let y = 0; y < mx.H; y++) {
-        for (let x = 0; x < mx.W; x++) {
-            let idx = y * mx.W + x;
-            let col = (mx.matrix[idx] < 128 ? 0 : 255);
-            let err = mx.matrix[idx] - col;
-            mx.matrix[idx] = col;
-            if (x + 1 < mx.W) mx.matrix[idx + 1] += (err * 7) >> 4;
-            if (y + 1 == mx.H) continue;
-
-            if (x > 0) mx.matrix[idx + mx.W - 1] += (err * 3) >> 4;
-            mx.matrix[idx + mx.W] += (err * 5) >> 4;
-            if (x + 1 < mx.W) mx.matrix[idx + mx.W + 1] += (err * 1) >> 4;
+            if (x > 0) arr[idx + w - 1] += (err * 3) >> 4;
+            arr[idx + w] += (err * 5) >> 4;
+            if (x + 1 < w) arr[idx + w + 1] += (err * 1) >> 4;
         }
     }
 }
 
-/**
- * @param {Matrix} mx 
- */
-export function edges(mx) {
+export function edges_simple(arr, w, h) {
     const kernel = [[-1, -1, -1], [-1, 9, -1], [-1, -1, -1]];
-    let t = mx.clone();
+    let t = [...arr];
 
-    for (let x = 1; x < t.W - 1; x++) {
-        for (let y = 1; y < t.H - 1; y++) {
+    for (let x = 1; x < w - 1; x++) {
+        for (let y = 1; y < h - 1; y++) {
             let sum = 0;
             for (let kx = -1; kx <= 1; kx++) {
                 for (let ky = -1; ky <= 1; ky++) {
-                    let val = t.get(x + kx, y + ky);
+                    let val = t[(x + kx) + (y + ky) * w];
                     sum += kernel[ky + 1][kx + 1] * val;
                 }
             }
-            sum = (sum < 0) ? 0 : (sum > 255 ? 255 : sum);
-            mx.set(x, y, sum);
+            arr[x + y * w] = round(constrain(sum, 0, 255));
         }
     }
 }
 
-/**
- * @param {Matrix} mx 
- */
-export function edges_median(mx) {
+export function edges_median(arr, w, h) {
     // let kernel = [[0, 0], [0, 1], [0, -1], [1, 0], [-1, 0]];
     let kernel = [[0, 0], [0, 1], [1, 0]];
-    let t = mx.clone();
+    let t = [...arr];
 
-    for (let x = 0; x < mx.W; x++) {
-        for (let y = 0; y < mx.H; y++) {
-            if (!((x == 0) || (x == mx.W - 1) || (y == 0) || (y == mx.H - 1))) {
+    for (let x = 0; x < w; x++) {
+        for (let y = 0; y < h; y++) {
+            if (!((x == 0) || (x == w - 1) || (y == 0) || (y == h - 1))) {
                 let sum = [];
                 for (let i = 0; i < kernel.length; i++) {
-                    sum.push(t.get(x + kernel[i][0], y + kernel[i][1]));
+                    sum.push(t[(x + kernel[i][0]) + (y + kernel[i][1]) * w]);
                 }
                 sum.sort();
                 let v = sum[sum.length - 1] - sum[0];
-                mx.set(x, y, v);
+                arr[x + y * w] = round(constrain(v, 0, 255));
             }
         }
     }
 }
 
-/**
- * @param {Matrix} mx 
- */
-export function sobel(mx, k) {
+export function edges_sobel(arr, w, h, k) {
     const kernel_x = [[-1, 0, 1], [-2, 0, 2], [-1, 0, 1]];
     const kernel_y = [[-1, -2, -1], [0, 0, 0], [1, 2, 1]];
-    let t = mx.clone();
+    let t = [...arr];
 
-    for (let x = 0; x < mx.W; x++) {
-        for (let y = 0; y < mx.H; y++) {
+    for (let x = 0; x < w; x++) {
+        for (let y = 0; y < h; y++) {
             let sum_x = 0;
             let sum_y = 0;
 
-            if (!((x == 0) || (x == mx.W - 1) || (y == 0) || (y == mx.H - 1))) {
+            if (!((x == 0) || (x == w - 1) || (y == 0) || (y == h - 1))) {
                 for (let kx = -1; kx <= 1; kx++) {
                     for (let ky = -1; ky <= 1; ky++) {
-                        let val = mx.get(x + kx, y + ky);
+                        let val = arr[(x + kx) + (y + ky) * w];
                         sum_x += kernel_x[ky + 1][kx + 1] * val;
                         sum_y += kernel_y[ky + 1][kx + 1] * val;
                     }
@@ -120,41 +83,12 @@ export function sobel(mx, k) {
             }
 
             let sum = Math.sqrt(sum_x ** 2 + sum_y ** 2);
-            sum = (sum < 0) ? 0 : (sum > 255 ? 255 : sum);
-            t.set(x, y, sum);
+            t[x + y * w] = constrain(sum, 0, 255);
         }
     }
 
-    for (let i = 0; i < t.matrix.length; i++) {
-        let val = mx.matrix[i] * (1 - k) + t.matrix[i] * k;
-        mx.matrix[i] = val;
-    }
-
-}
-
-/**
- * @param {Matrix} mx 
- */
-export function blur(mx) {
-    let t = mx.clone();
-
-    let v = 1 / 16;
-    let kernel = [[1, 2, 1], [2, 4, 2], [1, 2, 1]];
-
-    // let v = 1 / 9;
-    // let kernel = [[1, 1, 1], [1, 1, 1], [1, 1, 1]];
-
-    kernel = kernel.map(y => y.map(x => x *= v));
-
-    for (let y = 1; y < mx.H - 1; y++) {
-        for (let x = 1; x < mx.W - 1; x++) {
-            let sum = 0;
-            for (let ky = -1; ky <= 1; ky++) {
-                for (let kx = -1; kx <= 1; kx++) {
-                    sum += kernel[ky + 1][kx + 1] * t.get(x + kx, y + ky);
-                }
-            }
-            mx.set(x, y, sum);
-        }
+    for (let i = 0; i < arr.length; i++) {
+        let val = arr[i] * (1 - k) + t[i] * k;
+        arr[i] = round(val);
     }
 }

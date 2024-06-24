@@ -1,14 +1,14 @@
 import Matrix from "./matrix";
 
 export default class CanvasMatrix extends Matrix {
-    constructor(cv, onclick, ondrag, onwheel, on = '#478be6', off = 'black') {
+    constructor(cv, onclick, ondrag, onwheel, active = '#478be6', back = 0) {
         super();
 
         if (!cv) return;
 
         this.cv = cv;
         this.cx = cv.getContext("2d");
-        this.setColors(on, off);
+        this.setColors(active, back);
 
         this._onclick = onclick;
         this._ondrag = ondrag;
@@ -22,10 +22,14 @@ export default class CanvasMatrix extends Matrix {
         document.addEventListener("mouseup", e => this._onMouseUp(e));
     }
 
-    setColors(on, off) {
-        this.on = on;
-        this.off = off;
-        this.cx.strokeStyle = off;
+    setColors(active, back) {
+        this.active = active;
+        this.back = back;
+        this.cx.strokeStyle = back ? 'white' : 'black';
+    }
+
+    setMode(mode) {
+        this.mode = mode;
     }
 
     resize(w, h) {
@@ -34,25 +38,40 @@ export default class CanvasMatrix extends Matrix {
     }
 
     render() {
-        this.cx.fillStyle = this.off;
+        this.cx.fillStyle = this.back ? 'white' : 'black';
         this.cx.fillRect(0, 0, this.cv.width, this.cv.height);
 
         let b = this._blocksize;
-        this.cx.fillStyle = this.on;
+        this.cx.fillStyle = this.active;
 
         for (let x = 0; x < this.W; x++) {
             for (let y = 0; y < this.H; y++) {
-                if (this.get(x, y)) {
+                let v = this.get(x, y);
+                if (v) {
+                    switch (this.mode) {
+                        case 0:
+                            break;
+                        case 1:
+                            this.cx.fillStyle = this.active + v.toString(16).padStart(2, 0);
+                            break;
+                        case 2:
+                            this.cx.fillStyle = '#' + v.toString(16).padStart(6, 0);
+                            break;
+                    }
+
                     this.cx.fillRect(x * b, y * b, b, b);
-                    if (b > 3) this.cx.strokeRect(x * b, y * b, b, b);
+
+                    if (b > this._minsize) {
+                        this.cx.strokeRect(x * b, y * b, b, b);
+                    }
                 }
             }
         }
-        this.cx.fillStyle = this.off;
     }
 
     grid() {
         let b = this._blocksize;
+        if (b < this._minsize) return;
         for (let x = 0; x < this.W; x++) {
             this.cx.beginPath();
             this.cx.moveTo(x * b, 0);
@@ -72,8 +91,13 @@ export default class CanvasMatrix extends Matrix {
     _pressed = false;
     _dragged = false;
     _pressXY = [];
-    realW = 0;
-    realh = 0;
+    _minsize = 3;
+    _realW = 0;
+    _realH = 0;
+    _maxwidth = 800;
+
+    // 0 mono, 1 gray, 2 rgb
+    mode = 0;
 
     _resize() {
         if (!this.cv) return;
@@ -90,12 +114,12 @@ export default class CanvasMatrix extends Matrix {
 
         w = this.cv.parentNode.clientWidth;
         h = w * this.H / this.W;
-        if (h > 800) {
-            h = 800;
+        if (h > this._maxwidth) {
+            h = this._maxwidth;
             w = h * this.W / this.H;
         }
-        this.realW = w;
-        this.realH = h;
+        this._realW = w;
+        this._realH = h;
         this.cv.style.width = w + 'px';
         this.cv.style.height = h + 'px';
         this.render();
@@ -143,8 +167,8 @@ export default class CanvasMatrix extends Matrix {
             x -= this.cv.offsetParent.offsetLeft;
             y -= this.cv.offsetParent.offsetTop;
         }
-        x *= this.cv.width / this.realW;
-        y *= this.cv.height / this.realH;
+        x *= this.cv.width / this._realW;
+        y *= this.cv.height / this._realH;
         return { x: x, y: y }
     }
     _blockXY(xy) {
