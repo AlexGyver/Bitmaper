@@ -1,50 +1,46 @@
 export default class Matrix {
-    matrix = [];
-    W = 0;
-    H = 0;
+    matrix = new Int8Array();
+    width = 0;
+    height = 0;
 
-    constructor(w, h) {
-        this.resize(w, h);
+    get W() { return width; }
+    get H() { return height; }
+
+    constructor(width, height) {
+        if (width && height) this.resize(width, height);
     }
 
-    resize(w, h) {
-        if (w && h) {
-            this.W = w;
-            this.H = h;
-            this.matrix = new Array(w * h).fill(0);
-        }
+    resize(width, height) {
+        this.width = width;
+        this.height = height;
+        this.matrix = new Int8Array(width * height);
     }
 
-    merge(mx) {
-        if (this.matrix.length != mx.matrix.length) return;
+    merge(other) {
+        if (this.matrix.length != other.matrix.length) return;
         for (let i = 0; i < this.matrix.length; i++) {
-            let v = mx.matrix[i];
+            let v = other.matrix[i];
             if (v) this.matrix[i] = (v == 1) ? 1 : 0;
         }
     }
 
     clone() {
         let m = new Matrix();
-        m.W = this.W;
-        m.H = this.H;
-        m.matrix = [...this.matrix];
+        m.width = this.width;
+        m.width = this.width;
+        m.matrix = new Int8Array(this.matrix);
         return m;
     }
 
     set(x, y, v) {
-        if (x >= 0 && x < this.W && y >= 0 && y < this.H) {
-            this.matrix[y * this.W + x] = v;
-        }
+        this.matrix[y * this.width + x] = v;
     }
 
     get(x, y) {
-        if (x >= 0 && x < this.W && y >= 0 && y < this.H) {
-            return this.matrix[y * this.W + x];
-        }
-        return 0;
+        return this.matrix[y * this.width + x];
     }
 
     clear() {
-        if (this.matrix) this.matrix.fill(0);
+        this.matrix.fill(0);
     }
 }
