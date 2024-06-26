@@ -95,7 +95,7 @@ function update_h() {
 
 function render() {
     canvas.merge(editor);
-    canvas.render();
+    canvas.render(filt_ui.getValue("Grid"));
 
     let result = proc.makeCode(canvas, base_ui.getValue("Process").index, base_ui.getValue("Name"));
     base_ui.setValue("Code", result.code);
@@ -122,7 +122,9 @@ function display_h() {
 }
 
 function mode_h() {
-    canvas.setMode(base_ui.getValue("Mode").index);
+    let mode = base_ui.getValue("Mode").index;
+    base_ui.setValue("Process", (mode == 0) ? 0 : (mode == 1 ? 6 : 7));
+    canvas.setMode(mode);
     update_h();
 }
 
@@ -217,16 +219,22 @@ function send_h() {
         body: formData
     });
 }
+function png_h() {
+    let link = document.createElement('a');
+    link.href = canvas.cv.toDataURL('image/png');
+    link.download = base_ui.getValue("Name") + '.png';
+    link.click();
+}
 
 document.addEventListener("DOMContentLoaded", () => {
     if ('serviceWorker' in navigator && typeof USE_SW !== 'undefined') {
         navigator.serviceWorker.register('sw.js');
     }
 
-    // export
-    let exp_block = document.createElement('div');
-    exp_block.id = 'export';
-    exp_block.className = 'export';
+    // filters
+    let filt_block = document.createElement('div');
+    filt_block.id = 'filters';
+    filt_block.className = 'filters';
 
     // canvas
     let cv_cont = document.createElement('div');
@@ -238,7 +246,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     cv_inner.append(cv);
     cv_cont.append(cv_inner);
-    document.body.append(exp_block, cv_cont);
+    document.body.append(filt_block, cv_cont);
 
     canvas = new CanvasMatrix(cv, click_h, drag_h, wheel_h, displayModes.values[0].active, displayModes.values[0].back);
 
@@ -267,10 +275,9 @@ document.addEventListener("DOMContentLoaded", () => {
         .setDraggable(false)
         .setCollapsible(false);
 
-    base_ui.setValue("Process", 3);
-
-    filt_ui = QuickSettings.create(0, 0, "Filter", exp_block)
+    filt_ui = QuickSettings.create(0, 0, "Filter", filt_block)
         .addDropDown("Display Style", displayModes.labels, display_h)
+        .addBoolean("Grid", 1, update_h)
         .addBoolean("Invert Background", 0, update_h)
         .addBoolean("Preview", 1)
         .addBoolean("Invert", 0, update_h)
@@ -284,6 +291,7 @@ document.addEventListener("DOMContentLoaded", () => {
         .addRange('Threshold', 0, 100, 50, 1, update_h)
         .addBoolean("Median Edges", 0, update_h)
         .addBoolean("Editor", 0)
+        .addButton("Save .png", png_h)
         .addButton("Reset", reset_h)
         .setWidth(200)
         .setDraggable(false)

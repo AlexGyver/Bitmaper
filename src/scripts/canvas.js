@@ -37,7 +37,7 @@ export default class CanvasMatrix extends Matrix {
         this._resize();
     }
 
-    render() {
+    render(grid) {
         this.cx.fillStyle = this.back ? 'white' : 'black';
         this.cx.fillRect(0, 0, this.cv.width, this.cv.height);
 
@@ -61,7 +61,7 @@ export default class CanvasMatrix extends Matrix {
 
                     this.cx.fillRect(x * b, y * b, b, b);
 
-                    if (b > this._minsize) {
+                    if (grid && b > this._minsize) {
                         this.cx.strokeRect(x * b, y * b, b, b);
                     }
                 }

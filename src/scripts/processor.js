@@ -3,7 +3,7 @@ import { HEXtoRGB } from "./utils";
 //#region processes
 export const processes = {
     names: [
-        '1x pix/byte',
+        '1 pix/byte',
         '8x Horizontal',
         '8x Vertical',
         'GyverGFX Image',
