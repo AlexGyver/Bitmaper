@@ -46,7 +46,7 @@ module.exports = {
 
     watchOptions: {
         poll: 1000,
-        ignored: '/node_modules/',
+        // ignored: '/node_modules/',
     },
 
     mode: 'development',

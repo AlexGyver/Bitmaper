@@ -115,13 +115,13 @@ function display_h() {
 }
 
 function mode_h(mode) {
-    let sh = (mode != 2);
-    filt_ui.control('edges').display(sh);
-    filt_ui.control('sobel').display(sh);
-    filt_ui.control('dither').display(sh);
-    filt_ui.control('threshold').display(sh);
-    filt_ui.control('median').display(sh);
-    filt_ui.control('editor').display(sh);
+    filt_ui.control('edges').display(mode != 2);
+    filt_ui.control('sobel').display(mode != 2);
+    filt_ui.control('median').display(mode != 2);
+
+    filt_ui.control('dither').display(mode == 0);
+    filt_ui.control('threshold').display(mode == 0);
+    filt_ui.control('editor').display(mode == 0);
 
     base_ui.set('process', (mode == 0) ? 0 : (mode == 1 ? 6 : 7));
     canvas.setMode(mode);
@@ -302,7 +302,7 @@ document.addEventListener("DOMContentLoaded", () => {
         .addSwitch('edges', '', 0, update_h)
         .addRange('sobel', '', 0, 0, 1, 0.05, update_h)
         .addSwitch('dither', '', 0, update_h)
-        .addRange('threshold', '', 50, 0, 100, 1, update_h)
+        .addRange('threshold', '11', 50, 0, 100, 1, update_h)
         .addSwitch('median', '', 0, update_h)
         .addSwitch('editor', '', 0)
         .addButton('png', '', png_h)
@@ -317,7 +317,6 @@ document.addEventListener("DOMContentLoaded", () => {
             lang_h(0);
             break;
     }
-
     resize_h();
 });
 
