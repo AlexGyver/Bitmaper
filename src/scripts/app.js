@@ -1,28 +1,23 @@
-import QuickSettings from './quicksettings'
-import CanvasMatrix from './canvas'
+import UI from '@alexgyver/ui'; import CanvasMatrix from './canvas'
 import Matrix from './matrix';
 import ImageLoader from './imageloader';
 import * as proc from './processor';
 import Timer from './timer';
 import { dither, edges_median, edges_simple, edges_sobel, threshold } from './filters';
+import { Component } from '@alexgyver/component';
+import { lang } from './lang';
 
-let base_ui, filt_ui;
+let base_ui = new UI(), filt_ui = new UI();
 const preview_delay = 400;
 let canvas = new CanvasMatrix();
 let image = new ImageLoader();
 let editor = new Matrix();
 let timer = new Timer();
 
-const displayModes = {
-    labels: [
-        'Screen',
-        'Paper'
-    ],
-    values: [
-        { active: '#478be6', back: 0 },
-        { active: '#000000', back: 1 }
-    ]
-};
+const displayModes = [
+    { active: '#478be6', back: 0 },
+    { active: '#000000', back: 1 }
+];
 
 async function file_h(file) {
     try {
@@ -32,22 +27,21 @@ async function file_h(file) {
         return;
     }
     editor.clear();
-    base_ui.setValue("Name", image.name);
-    // setDefaults();
+    base_ui.set('name', image.name);
     update_h();
 }
 async function link_h(link) {
     if (link.length) {
         await file_h(link);
-        base_ui.setValue("Image Link", "");
+        base_ui.set('link', '');
     }
 }
 
 function resize_h() {
-    let wh = [base_ui.getValue("Width"), base_ui.getValue("Height")];
+    let wh = [base_ui.get('width'), base_ui.get('height')];
     canvas.resize(wh[0], wh[1]);
     editor.resize(wh[0], wh[1]);
-    if (Math.max(wh[0], wh[1]) > 500) filt_ui.setValue("Preview", false);
+    if (Math.max(wh[0], wh[1]) > 500) filt_ui.set('preview', false);
     update_h();
 }
 
@@ -58,18 +52,18 @@ function fit_h() {
 
 function update_h() {
     if (image.image) {
-        let mode = base_ui.getValue("Mode").index;
+        let mode = base_ui.get('mode');
 
         image.render(
             canvas,
-            base_ui.getValue("Rotate"),
-            filt_ui.getValue("Invert Background"),
+            base_ui.get('rotate'),
+            filt_ui.get('invert_b'),
             {
-                invert: displayModes.values[filt_ui.getValue("Display Style").index].back ^ filt_ui.getValue("Invert"),
-                brightness: filt_ui.getValue("Brightness"),
-                contrast: filt_ui.getValue("Contrast"),
-                saturate: filt_ui.getValue("Saturate"),
-                blur: filt_ui.getValue("Blur"),
+                invert: displayModes[filt_ui.get('display')].back ^ filt_ui.get('invert'),
+                brightness: filt_ui.get('brightness'),
+                contrast: filt_ui.get('contrast'),
+                saturate: filt_ui.get('saturate'),
+                blur: filt_ui.get('blur'),
                 grayscale: mode == 2 ? 0 : 100,
             }
         );
@@ -82,12 +76,11 @@ function update_h() {
         }
 
         if (mode <= 1) {
-            if (filt_ui.getValue("Edges")) edges_simple(canvas.matrix, canvas.W, canvas.H);
-            let sobel = filt_ui.getValue("Sobel Edges");
-            if (sobel) edges_sobel(canvas.matrix, canvas.W, canvas.H, sobel);
-            if (filt_ui.getValue("Dither")) dither(canvas.matrix, canvas.W, canvas.H);
-            if (mode == 0) threshold(canvas.matrix, filt_ui.getValue("Threshold") * 2.56);
-            if (filt_ui.getValue("Median Edges")) edges_median(canvas.matrix, canvas.W, canvas.H);
+            if (filt_ui.get('edges')) edges_simple(canvas.matrix, canvas.W, canvas.H);
+            if (filt_ui.get('sobel')) edges_sobel(canvas.matrix, canvas.W, canvas.H, filt_ui.get('sobel'));
+            if (filt_ui.get('dither')) dither(canvas.matrix, canvas.W, canvas.H);
+            if (mode == 0) threshold(canvas.matrix, filt_ui.get('threshold') * 2.56);
+            if (filt_ui.get('median')) edges_median(canvas.matrix, canvas.W, canvas.H);
         }
     }
     render();
@@ -95,54 +88,62 @@ function update_h() {
 
 function render() {
     canvas.merge(editor);
-    canvas.render(filt_ui.getValue("Grid"));
+    canvas.render(filt_ui.get('grid'));
 
-    let result = proc.makeCode(canvas, base_ui.getValue("Process").index, base_ui.getValue("Name"));
-    base_ui.setValue("Code", result.code);
+    let result = proc.makeCode(canvas, base_ui.get('process'), base_ui.get('name'));
+    base_ui.set('code', result.code);
 
     let info = `${canvas.W}x${canvas.H} (${result.size} bytes)<br>`;
     info += Math.round(canvas.matrix.filter(v => v).length / canvas.matrix.length * 100) + '% pixels on'
-    base_ui.setValue("Result", info);
+    base_ui.set('result', info);
 }
 
 function show() {
     image.show(canvas,
-        base_ui.getValue("Rotate"),
-        displayModes.values[filt_ui.getValue("Display Style").index].back ^ filt_ui.getValue("Invert Background"),
+        base_ui.get('rotate'),
+        displayModes[filt_ui.get('display')].back ^ filt_ui.get('invert_b'),
         {
-            invert: filt_ui.getValue("Invert"),
+            invert: filt_ui.get('invert'),
         }
     );
 }
 
 function display_h() {
-    let colors = displayModes.values[filt_ui.getValue("Display Style").index];
+    let colors = displayModes[filt_ui.get('display')];
     canvas.setColors(colors.active, colors.back);
     update_h();
 }
 
-function mode_h() {
-    let mode = base_ui.getValue("Mode").index;
-    base_ui.setValue("Process", (mode == 0) ? 0 : (mode == 1 ? 6 : 7));
+function mode_h(mode) {
+    let sh = (mode != 2);
+    filt_ui.control('edges').display(sh);
+    filt_ui.control('sobel').display(sh);
+    filt_ui.control('dither').display(sh);
+    filt_ui.control('threshold').display(sh);
+    filt_ui.control('median').display(sh);
+    filt_ui.control('editor').display(sh);
+
+    base_ui.set('process', (mode == 0) ? 0 : (mode == 1 ? 6 : 7));
     canvas.setMode(mode);
     update_h();
 }
 
 function reset_h() {
-    base_ui.setValue("Rotate", 0);
-    filt_ui.setValue("Invert Background", 0);
-    filt_ui.setValue("Invert", 0);
-    filt_ui.setValue("Brightness", 100);
-    filt_ui.setValue("Contrast", 100);
-    filt_ui.setValue("Saturate", 100);
-    filt_ui.setValue("Blur", 0);
-    filt_ui.setValue("Edges", 0);
-    filt_ui.setValue("Sobel Edges", 0);
-    filt_ui.setValue("Dither", 0);
-    filt_ui.setValue("Threshold", 50);
-    filt_ui.setValue("Median Edges", 0);
-    filt_ui.setValue("Editor", 0);
+    base_ui.control('rotate').default();
+    filt_ui.control('invert_b').default();
+    filt_ui.control('invert').default();
+    filt_ui.control('brightness').default();
+    filt_ui.control('contrast').default();
+    filt_ui.control('saturate').default();
+    filt_ui.control('blur').default();
+    filt_ui.control('edges').default();
+    filt_ui.control('sobel').default();
+    filt_ui.control('dither').default();
+    filt_ui.control('threshold').default();
+    filt_ui.control('median').default();
+    filt_ui.control('editor').default();
     editor.clear();
+    update_h();
 }
 
 // ============== EDITOR ==============
@@ -151,7 +152,7 @@ function btn_to_val(btn) {
     return (btn == 0) ? 1 : (btn == 1 ? 0 : -1);
 }
 function click_h(v, button) {
-    if (filt_ui.getValue("Editor")) {
+    if (filt_ui.get('editor')) {
         editor.set(v.x, v.y, btn_to_val(button));
         update_h();
     }
@@ -159,7 +160,7 @@ function click_h(v, button) {
 
 // ============== MOUSE ==============
 function drag_h(v, button) {
-    if (filt_ui.getValue("Editor")) {
+    if (filt_ui.get('editor')) {
         editor.set(v.block.x, v.block.y, btn_to_val(button));
         update_h();
         return;
@@ -167,21 +168,21 @@ function drag_h(v, button) {
 
     editor.clear();
     image.pan(v.dx, v.dy, v.release);
-    if (filt_ui.getValue("Preview") || v.release) {
+    if (filt_ui.get('preview') || v.release) {
         update_h();
     } else {
         show();
     }
 }
 function wheel_h(v) {
-    if (filt_ui.getValue("Editor")) {
+    if (filt_ui.get('editor')) {
         return;
     }
     timer.stop();
     editor.clear();
     image.scale(v);
 
-    if (filt_ui.getValue("Preview")) {
+    if (filt_ui.get('preview')) {
         update_h();
     } else {
         show();
@@ -191,7 +192,7 @@ function wheel_h(v) {
 function rotate_h() {
     editor.clear();
 
-    if (filt_ui.getValue("Preview")) {
+    if (filt_ui.get('preview')) {
         update_h();
     } else {
         show();
@@ -201,16 +202,16 @@ function rotate_h() {
 
 // ============== SAVE ==============
 function copy_h() {
-    navigator.clipboard.writeText(base_ui.getValue("Code"));
+    navigator.clipboard.writeText(base_ui.get('code'));
 }
 function saveH_h() {
-    proc.downloadCode(canvas, base_ui.getValue("Process").index, base_ui.getValue("Name"));
+    proc.downloadCode(canvas, base_ui.get('process'), base_ui.get('name'));
 }
 function saveBin_h() {
-    proc.downloadBin(canvas, base_ui.getValue("Process").index, base_ui.getValue("Name"));
+    proc.downloadBin(canvas, base_ui.get('process'), base_ui.get('name'));
 }
 function send_h() {
-    let blob = proc.makeBlob(canvas, base_ui.getValue("Process").index);
+    let blob = proc.makeBlob(canvas, base_ui.get('process'));
     let formData = new FormData();
     formData.append('bitmap', blob);
 
@@ -222,8 +223,15 @@ function send_h() {
 function png_h() {
     let link = document.createElement('a');
     link.href = canvas.cv.toDataURL('image/png');
-    link.download = base_ui.getValue("Name") + '.png';
+    link.download = base_ui.get('name') + '.png';
     link.click();
+}
+
+function lang_h(v) {
+    base_ui.set('lang', v);
+    base_ui.setLabels(lang[v].base);
+    filt_ui.setLabels(lang[v].filters);
+    filt_ui.control('display').options = lang[v].display;
 }
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -231,71 +239,84 @@ document.addEventListener("DOMContentLoaded", () => {
         navigator.serviceWorker.register('sw.js');
     }
 
-    // filters
-    let filt_block = document.createElement('div');
-    filt_block.id = 'filters';
-    filt_block.className = 'filters';
+    let filters = Component.make('div', {
+        id: 'filters',
+        class: 'filters',
+        parent: document.body,
+    });
 
-    // canvas
-    let cv_cont = document.createElement('div');
-    cv_cont.className = 'cv_cont';
-    let cv_inner = document.createElement('div');
-    cv_inner.className = 'cv_inner';
-    let cv = document.createElement('canvas');
-    cv.className = 'canvas';
+    let ctx = {};
+    Component.make('div', {
+        class: 'cv_cont',
+        context: ctx,
+        parent: document.body,
+        children: [
+            {
+                tag: 'div',
+                class: 'cv_inner',
+                children: [
+                    {
+                        tag: 'canvas',
+                        class: 'canvas',
+                        var: 'cv',
+                    }
+                ]
+            }
+        ]
+    });
 
-    cv_inner.append(cv);
-    cv_cont.append(cv_inner);
-    document.body.append(filt_block, cv_cont);
+    canvas = new CanvasMatrix(ctx.$cv, click_h, drag_h, wheel_h, displayModes[0].active, displayModes[0].back);
 
-    canvas = new CanvasMatrix(cv, click_h, drag_h, wheel_h, displayModes.values[0].active, displayModes.values[0].back);
-
-    let buttons = { "Copy": copy_h, ".h": saveH_h, ".bin": saveBin_h };
+    let buttons = { copy: ["Copy", copy_h], header: [".h", saveH_h], bin: [".bin", saveBin_h] };
     if (window.location.hostname.match(/^((25[0-5]|(2[0-4]|1[0-9]|[1-9]|)[0-9])(\.(?!$)|$)){4}$/)) {
-        buttons["Send"] = send_h;
+        buttons.send = ['Send', send_h];
     }
 
     // base_ui
-    base_ui = QuickSettings.create(0, 0, "Bitmaper")
-        .addFileChooser("Image File", "", "", file_h)
-        .addText("Image Link", "", link_h)
-        .addText("Name", "", update_h)
-        .addHTML("", " ")
-        .addNumber("Width", 1, 10000, 128, 1, resize_h)
-        .addNumber("Height", 1, 10000, 64, 1, resize_h)
-        .addButton("Fit", fit_h)
-        .addRange('Rotate', -180, 180, 0, 5, rotate_h)
-        .addDropDown("Mode", ['Mono', 'Grayscale', 'RGB'], mode_h)
-        .addDropDown("Process", proc.processes.names, update_h)
-        .addHTML("Result", "")
-        .addTextArea("Code")
+    base_ui = new UI({ title: "Bitmaper", theme: 'dark' })
+        .addFile('file', '', file_h)
+        .addText('link', '', '', link_h)
+        .addText('name', '', '', update_h)
+        .addNumber('width', '', 128, 1, resize_h)
+        .addNumber('height', '', 64, 1, resize_h)
+        .addButton('fit', '', fit_h)
+        .addRange('rotate', '', 0, -180, 180, 5, rotate_h)
+        .addSelect('mode', '', ['Mono', 'Grayscale', 'RGB'], mode_h)
+        .addSelect('process', '', proc.processes.names, update_h)
+        .addHTML('result', '', '')
+        .addArea('code', '', '')
         .addButtons(buttons)
-        .addButton("Info", info_h)
-        .setWidth(200)
-        .setDraggable(false)
-        .setCollapsible(false);
+        .addSelect('lang', 'Language', ['English', 'Russian'], lang_h)
+        .addButton('info', '', info_h);
 
-    filt_ui = QuickSettings.create(0, 0, "Filter", filt_block)
-        .addDropDown("Display Style", displayModes.labels, display_h)
-        .addBoolean("Grid", 1, update_h)
-        .addBoolean("Invert Background", 0, update_h)
-        .addBoolean("Preview", 1)
-        .addBoolean("Invert", 0, update_h)
-        .addRange('Brightness', 0, 250, 100, 5, update_h)
-        .addRange('Contrast', 0, 250, 100, 5, update_h)
-        .addRange('Saturate', 0, 250, 100, 5, update_h)
-        .addRange('Blur', 0, 1, 0, 0.05, update_h)
-        .addBoolean("Edges", 0, update_h)
-        .addRange('Sobel Edges', 0, 1, 0, 0.05, update_h)
-        .addBoolean("Dither", 0, update_h)
-        .addRange('Threshold', 0, 100, 50, 1, update_h)
-        .addBoolean("Median Edges", 0, update_h)
-        .addBoolean("Editor", 0)
-        .addButton("Save .png", png_h)
-        .addButton("Reset", reset_h)
-        .setWidth(200)
-        .setDraggable(false)
-        .setCollapsible(false);
+    filt_ui = new UI({ title: "Filters", theme: 'dark', parent: filters })
+        .addSelect('display', '', [], display_h)
+        .addSwitch('grid', '', 1, update_h)
+        .addSwitch('invert_b', '', 0, update_h)
+        .addSwitch('preview', '', 1)
+        .addSwitch('invert', '', 0, update_h)
+        .addRange('brightness', '', 100, 0, 250, 5, update_h)
+        .addRange('contrast', '', 100, 0, 250, 5, update_h)
+        .addRange('saturate', '', 100, 0, 250, 5, update_h)
+        .addRange('blur', '', 0, 0, 1, 0.05, update_h)
+        .addSwitch('edges', '', 0, update_h)
+        .addRange('sobel', '', 0, 0, 1, 0.05, update_h)
+        .addSwitch('dither', '', 0, update_h)
+        .addRange('threshold', '', 50, 0, 100, 1, update_h)
+        .addSwitch('median', '', 0, update_h)
+        .addSwitch('editor', '', 0)
+        .addButton('png', '', png_h)
+        .addButton('reset', '', reset_h);
+
+    switch (navigator.language || navigator.userLanguage) {
+        case 'ru-RU':
+        case 'ru':
+            lang_h(1);
+            break;
+        default:
+            lang_h(0);
+            break;
+    }
 
     resize_h();
 });
@@ -310,7 +331,7 @@ PROCESS
 - GyverGFX BitMap - 8 пикселей вертикально (MSB снизу), строками слева направо сверху вниз: [widthLSB, widthMSB, heightLSB, heightMSB, data_0, ...data_n]
 - GyverGFX BitPack - сжатый формат*: [heightLSB, heightMSB, lenLSB, lenMSB, data_0, ...data_n]
 - GyverGFX Image - программа выберет лёгкий между BitMap и BitPack: [0 map | 1 pack, x, x, x, x, data_0, ...data_n]
-- Gray - 1 пиксель в байте, оттенки серого
+- Grayscale - 1 пиксель в байте, оттенки серого
 - RGB888 - 1 пиксель на 3 байта (24 бит RGB) [r0, g0, b0, ...]
 - RGB565 - 1 пиксель на 2 байта (16 бит RGB) [rrrrrggggggbbbbb] тип uint16
 - RGB233 - 1 пиксель в байте (8 бит RGB) [rrgggbbb]
@@ -337,20 +358,36 @@ PROCESS
 - Активный пиксель на выбранном стиле отображения: OLED - голубой, Paper - чёрный
 - При открытии приложения с локального сервера (IP адрес в строке адреса), например с esp, появится кнопка Send - при нажатии приложение отправит битмап в выбранном формате через formData на url /bitmap с query string параметрами width и height, т.е. <ip>/bitmap?width=N&height=N`;
 
-    let info_cont = document.createElement('div');
-    let info_inner = document.createElement('div');
-    let info_close = document.createElement('button');
-    let info_text = document.createElement('span');
-
-    info_cont.className = 'info_cont';
-    info_text.innerText = text;
-    info_inner.className = 'info_inner';
-    info_close.addEventListener('click', () => info_cont.remove());
-    info_cont.addEventListener('click', () => info_cont.remove());
-    info_inner.addEventListener('click', (e) => e.stopPropagation());
-    info_close.innerText = 'x';
-
-    info_inner.append(info_close, info_text);
-    info_cont.append(info_inner);
-    document.body.append(info_cont);
+    let ctx = {};
+    Component.make('div', {
+        class: 'info_cont',
+        var: 'info',
+        parent: document.body,
+        context: ctx,
+        also(el) {
+            el.addEventListener('click', () => el.remove());
+        },
+        children: [
+            {
+                tag: 'div',
+                class: 'info_inner',
+                also(el) {
+                    el.addEventListener('click', (e) => e.stopPropagation());
+                },
+                children: [
+                    {
+                        tag: 'button',
+                        text: 'x',
+                        also(el) {
+                            el.addEventListener('click', () => ctx.$info.remove());
+                        },
+                    },
+                    {
+                        tag: 'span',
+                        text: text,
+                    }
+                ]
+            }
+        ]
+    });
 }

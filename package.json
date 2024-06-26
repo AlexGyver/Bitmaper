@@ -1,6 +1,6 @@
 {
   "name": "bitmaper",
-  "version": "1.0",
+  "version": "1.1",
   "main": "index.js",
   "scripts": {
     "build": "webpack --config ./webpack.single.config.js & webpack --config ./webpack.host.config.js",
@@ -22,8 +22,12 @@
     "mini-css-extract-plugin": "^2.9.0",
     "replace-hash-in-file-webpack-plugin": "^1.0.8",
     "style-loader": "^4.0.0",
-    "webpack": "^5.91.0",
+    "webpack": "^5.92.1",
     "webpack-cli": "^5.1.4",
     "webpack-dev-server": "^5.0.4"
+  },
+  "dependencies": {
+    "@alexgyver/component": "^1.0.13",
+    "@alexgyver/ui": "^1.0.14"
   }
 }
