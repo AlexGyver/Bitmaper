@@ -61,7 +61,7 @@ export const lang = [
         filters: {
             display: 'Стиль отображения',
             grid: 'Сетка',
-            invert_b: 'Инфвертировать фон',
+            invert_b: 'Инвертировать фон',
             preview: 'Предпросмотр',
             invert: 'Инвертировать',
             brightness: 'Яркость',

@@ -38,6 +38,7 @@ export default class CanvasMatrix extends Matrix {
     }
 
     render(grid) {
+        this._grid = grid;
         this.cx.fillStyle = this.back ? 'white' : 'black';
         this.cx.fillRect(0, 0, this.cv.width, this.cv.height);
 
@@ -94,6 +95,7 @@ export default class CanvasMatrix extends Matrix {
     _minsize = 3;
     _realW = 0;
     _realH = 0;
+    _grid = 1;
     _maxwidth = 800;
 
     // 0 mono, 1 gray, 2 rgb
@@ -122,7 +124,7 @@ export default class CanvasMatrix extends Matrix {
         this._realH = h;
         this.cv.style.width = w + 'px';
         this.cv.style.height = h + 'px';
-        this.render();
+        this.render(this._grid);
     }
     _onMouseWheel(e) {
         this._onwheel(e.deltaY < 0 ? 1 : -1);
