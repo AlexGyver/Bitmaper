@@ -27,7 +27,7 @@
     "webpack-dev-server": "^5.0.4"
   },
   "dependencies": {
-    "@alexgyver/component": "^1.0.15",
-    "@alexgyver/ui": "^1.0.21"
+    "@alexgyver/component": "^1.0.16",
+    "@alexgyver/ui": "^1.0.22"
   }
 }
