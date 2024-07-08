@@ -76,7 +76,7 @@ function make8horiz(m) {
             let byte = 0;
             for (let b = 0; b < 8; b++) {
                 byte <<= 1;
-                byte |= m.get(xx * 8 + b, y);
+                byte |= m.get(xx * 8 + b, y) ? 1 : 0;
             }
             data.push(byte);
         }
@@ -91,7 +91,7 @@ function make8vert(m) {
             let byte = 0;
             for (let b = 0; b < 8; b++) {
                 byte >>= 1;
-                byte |= (m.get(x, yy * 8 + b) << 7);
+                byte |= (m.get(x, yy * 8 + b) ? 1 : 0) << 7;
             }
             data.push(byte);
         }
@@ -106,7 +106,7 @@ function make8vert_row(m) {
             let byte = 0;
             for (let b = 0; b < 8; b++) {
                 byte >>= 1;
-                byte |= (m.get(x, yy * 8 + b) << 7);
+                byte |= (m.get(x, yy * 8 + b) ? 1 : 0) << 7;
             }
             data.push(byte);
         }
@@ -139,7 +139,7 @@ function makeBitpack(m) {
 
     for (let x = 0; x < m.W; x++) {
         for (let y = 0; y < m.H; y++) {
-            let v = m.get(x, y);
+            let v = m.get(x, y) ? 1 : 0;
             if (!i) {
                 i = 1;
                 value = v;
@@ -203,11 +203,10 @@ function makeRGB233(m) {
 //#region export
 function makeCodeArray(data, width = 16) {
     let code = '';
-    let i = 0;
-    for (let byte of data) {
-        if (!i) code += '\n\t';
-        code += `0x${byte.toString(16).padStart(2, 0)}, `;
-        if (++i == width) i = 0;
+    for (let i = 0; i < data.length; i++) {
+        if (i % width == 0) code += '\n\t';
+        code += '0x' + data[i].toString(16).padStart(2, 0);
+        if (i != data.length - 1) code += ', ';
     }
     return code;
 }

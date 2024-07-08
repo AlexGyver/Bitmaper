@@ -234,6 +234,10 @@ function lang_h(v) {
     filt_ui.control('display').options = lang[v].display;
 }
 
+function git_h() {
+    window.open('https://github.com/AlexGyver/Bitmaper', '_blank').focus();
+}
+
 document.addEventListener("DOMContentLoaded", () => {
     if ('serviceWorker' in navigator && typeof USE_SW !== 'undefined') {
         navigator.serviceWorker.register('sw.js');
@@ -281,13 +285,13 @@ document.addEventListener("DOMContentLoaded", () => {
         .addNumber('height', '', 64, 1, resize_h)
         .addButton('fit', '', fit_h)
         .addRange('rotate', '', 0, -180, 180, 5, rotate_h)
-        .addSelect('mode', '', ['Mono', 'Grayscale', 'RGB'], mode_h)
+        .addSelect('mode', '', ['Mono', 'Gray', 'RGB'], mode_h)
         .addSelect('process', '', proc.processes.names, update_h)
         .addHTML('result', '', '')
         .addArea('code', '', '')
         .addButtons(buttons)
         .addSelect('lang', 'Language', ['English', 'Russian'], lang_h)
-        .addButton('info', '', info_h);
+        .addButtons({ info: ['', info_h], github: ['GitHub', git_h] })
 
     filt_ui = new UI({ title: "Filters", theme: 'dark', parent: filters })
         .addSelect('display', '', [], display_h)
@@ -325,7 +329,7 @@ function info_h() {
 
 Режимы изображения
 - Mono - монохромный (чёрно-белый)
-- Grayscale - оттенки серого
+- Gray - оттенки серого
 - RGB - полноцветное изображение
 
 Алгоритмы кодирования
