@@ -125,6 +125,8 @@ function mode_h(mode) {
 
     base_ui.set('process', (mode == 0) ? 0 : (mode == 1 ? 6 : 7));
     canvas.setMode(mode);
+    resetFilt();
+    reset_h();
     update_h();
 }
 
@@ -132,6 +134,12 @@ function reset_h() {
     base_ui.control('rotate').default();
     filt_ui.control('invert_b').default();
     filt_ui.control('invert').default();
+    resetFilt();
+    editor.clear();
+    update_h();
+}
+
+function resetFilt() {
     filt_ui.control('brightness').default();
     filt_ui.control('contrast').default();
     filt_ui.control('saturate').default();
@@ -142,8 +150,6 @@ function reset_h() {
     filt_ui.control('threshold').default();
     filt_ui.control('median').default();
     filt_ui.control('editor').default();
-    editor.clear();
-    update_h();
 }
 
 // ============== EDITOR ==============
