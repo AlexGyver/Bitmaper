@@ -187,7 +187,7 @@ function makeRGB565(m) {
     let data = [];
     for (let hex of m.matrix) {
         let rgb = HEXtoRGB(hex);
-        data.push(((rgb[0] & 0b11111000) << 8) | ((rgb[1] & 0b11111100) << 3) | (rgb[0] >> 3));
+        data.push(((rgb[0] & 0b11111000) << 8) | ((rgb[1] & 0b11111100) << 3) | (rgb[2] >> 3));
     }
     return data;
 }
