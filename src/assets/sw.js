@@ -2,10 +2,10 @@ const CACHE_NAME = 'bitmaper_@cachename';
 
 const CACHED_URLS = [
   '/',
-  '/favicon.svg',
-  '/index.html',
-  '/script.js',
-  '/style.css',
+  'favicon.svg',
+  'index.html',
+  'script.js',
+  'style.css',
 ]
 
 self.addEventListener('install', event => {
