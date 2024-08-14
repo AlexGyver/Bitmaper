@@ -13,6 +13,8 @@ let canvas = new CanvasMatrix();
 let image = new ImageLoader();
 let editor = new Matrix();
 let timer = new Timer();
+let files = null;
+let cur_lang = 0;
 
 const displayModes = [
     { active: '#478be6', back: 0 },
@@ -20,6 +22,17 @@ const displayModes = [
 ];
 
 async function file_h(file) {
+    if (file instanceof File) {
+        files = null;
+        await processFile(file);
+    } else if (file instanceof FileList) {
+        files = file;
+        await processFile(files[0]);
+    } else {
+        files = null;
+    }
+}
+async function processFile(file) {
     try {
         await image.load(file);
     } catch (e) {
@@ -51,6 +64,11 @@ function fit_h() {
 }
 
 function update_h() {
+    update();
+    render();
+}
+
+function update() {
     if (image.image) {
         let mode = base_ui.get('mode');
 
@@ -83,7 +101,6 @@ function update_h() {
             if (filt_ui.get('median')) edges_median(canvas.matrix, canvas.W, canvas.H);
         }
     }
-    render();
 }
 
 function render() {
@@ -206,6 +223,57 @@ function rotate_h() {
     }
 }
 
+function sleep(time) {
+    return new Promise(res => setTimeout(res, time));
+}
+
+async function bulk_h() {
+    if (files == null) {
+        alert(lang[cur_lang].base.bulk_info);
+        return;
+    }
+
+    let str = '';
+    let idx = 0;
+    let size = 0;
+    let process = base_ui.get('process');
+    let name = base_ui.get('name');
+    let names = '';
+    let offset = Object.assign({}, image.offset);
+
+    for (let file of files) {
+        base_ui.set('result', 'Bulk process: ' + Math.round(idx / files.length * 100) + '%');
+        try {
+            await image.load(file);
+        } catch (e) {
+            alert(e);
+            return;
+        }
+        editor.clear();
+        image.setOffset(offset);
+        update();
+        canvas.merge(editor);
+        canvas.render(filt_ui.get('grid'));
+
+        let result = proc.makeCode(canvas, process, name + '_' + idx);
+        if (idx) {
+            names += ', ';
+            if (idx % 8 == 0) names += '\r\n\t';
+        }
+        names += result.name;
+        idx++;
+        size += result.size;
+        str += result.code;
+        str += '\r\n\r\n';
+    }
+    str += `const uint16_t ${name}_list_size = ${idx};\r\n\r\n`;
+    str += `${proc.processes.prefix[process]}* const ${name}_list_pgm[] PROGMEM = {\r\n\t${names}\r\n};\r\n\r\n`;
+    str += `${proc.processes.prefix[process]}* const ${name}_list[] = {\r\n\t${names}\r\n};\r\n\r\n`;
+
+    base_ui.set('code', str);
+    base_ui.set('result', 'Encoded ' + idx + ' files<br>' + (size / 1024.0).toFixed(2) + ' kB');
+}
+
 // ============== SAVE ==============
 function copy_h() {
     navigator.clipboard.writeText(base_ui.get('code'));
@@ -238,6 +306,7 @@ function lang_h(v) {
     base_ui.setLabels(lang[v].base);
     filt_ui.setLabels(lang[v].filters);
     filt_ui.control('display').options = lang[v].display;
+    cur_lang = v;
 }
 
 function git_h() {
@@ -294,6 +363,7 @@ document.addEventListener("DOMContentLoaded", () => {
         .addSelect('mode', '', ['Mono', 'Gray', 'RGB'], mode_h)
         .addSelect('process', '', proc.processes.names, update_h)
         .addHTML('result', '', '')
+        .addButton('bulk', '', bulk_h)
         .addArea('code', '', '')
         .addButtons(buttons)
         .addSelect('lang', 'Language', ['English', 'Russian'], lang_h)
@@ -354,6 +424,13 @@ function info_h() {
 Редактор
 - Действия кнопок мыши при включенном редакторе: ЛКМ - добавить точку, ПКМ - стереть точку, СКМ - отменить изменения на слое редактора
 - При изменении размера битмапа, при перемещении и масштабировании изображения слой редактора очищается
+
+Массовая конвертация
+- Выбрать несколько файлов или перетащить их на кнопку выбора файлов. Отобразится первый файл
+- Настроить параметры кодирования и фильтры, они будут применены ко всем остальным файлам
+- Нажать "Массовая конвертация", дождаться окончания
+- Результат появится в окне вывода кода. Изображения будут иметь суффиксы с номером, также прогармма составит из них список
+- Смотри пример в readme на GitHub
 
 Прочее
 - На изображениях со сплошными участками BitPack может быть в разы эффективнее обычного BitMap. На изображениях с dithering работает неэффективно.

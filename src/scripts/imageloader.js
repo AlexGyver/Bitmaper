@@ -83,6 +83,11 @@ export default class ImageLoader {
         this.offset.w = w / cvbase.cv.width;
     }
 
+    setOffset(offset) {
+        this.first = false;
+        this.offset = offset;
+    }
+
     render(cvbase, angle, background, filters) {
         if (!this.image) return;
         if (this.first) {

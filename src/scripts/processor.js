@@ -209,7 +209,7 @@ function makeRGB233(m) {
 function makeCodeArray(data, width = 16) {
     let code = '';
     for (let i = 0; i < data.length; i++) {
-        if (i % width == 0) code += '\n\t';
+        if (i % width == 0) code += '\r\n\t';
         code += '0x' + data[i].toString(16).padStart(2, 0);
         if (i != data.length - 1) code += ', ';
     }
@@ -255,8 +255,9 @@ ${(type >= 3 && type <= 5) ? '#include <GyverGFX.h>' : ''}
 
 export function makeCode(m, type, name) {
     let data = processes.func[type](m);
-    let code = `${processes.prefix[type]} ${name}_${m.W}x${m.H}[] PROGMEM = {`;
+    let codename = `${name}_${m.W}x${m.H}`;
+    let code = `${processes.prefix[type]} ${codename}[] PROGMEM = {`;
     code += makeCodeArray(data, 24);
-    code += '\n};'
-    return { code: code, size: data.length * processes.mult[type] };
+    code += '\r\n};'
+    return { code: code, size: data.length * processes.mult[type], name: codename };
 }

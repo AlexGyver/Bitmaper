@@ -15,8 +15,10 @@ export const lang = [
             copy: 'Copy',
             header: '.h',
             bin: 'bin',
+            bulk: 'Bulk encode',
             send: 'Send',
             info: 'Info',
+            bulk_info: 'Select multiple files first',
         },
         filters: {
             display: 'Display style',
@@ -55,8 +57,10 @@ export const lang = [
             copy: 'Копировать',
             header: '.h',
             bin: 'bin',
+            bulk: 'Массовая конвертация',
             send: 'Отправить',
             info: 'Инфо',
+            bulk_info: 'Сначала выбери несколько файлов',
         },
         filters: {
             display: 'Стиль отображения',
