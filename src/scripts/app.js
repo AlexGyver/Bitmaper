@@ -123,7 +123,7 @@ function mode_h(mode) {
     filt_ui.control('threshold').display(mode == 0);
     filt_ui.control('editor').display(mode == 0);
 
-    base_ui.set('process', (mode == 0) ? 0 : (mode == 1 ? 6 : 7));
+    base_ui.set('process', (mode == 0) ? 0 : (mode == 1 ? 7 : 8));
     canvas.setMode(mode);
     resetFilt();
     reset_h();
@@ -339,16 +339,17 @@ function info_h() {
 - RGB - полноцветное изображение
 
 Алгоритмы кодирования
-- 1x pix/byte - 1 пиксель в байте, строками слева направо сверху вниз [data_0, ...data_n]
-- 8x Horizontal - 8 пикселей в байте горизонтально (MSB слева), строками слева направо сверху вниз [data_0, ...data_n]
-- 8x Vertical - 8 пикселей в байте вертикально (MSB снизу), столбцами сверху вниз слева направо  [data_0, ...data_n]
-- GyverGFX BitMap - 8 пикселей вертикально (MSB снизу), строками слева направо сверху вниз: [widthLSB, widthMSB, heightLSB, heightMSB, data_0, ...data_n]
+- 1x pix/byte - 1 пиксель в байте, строками слева направо сверху вниз: [data_0, ...data_n]
+- 8x Horizontal - 8 пикселей в байте горизонтально (MSB слева), строками слева направо сверху вниз: [data_0, ...data_n]
+- 8x Vertical Col - 8 пикселей в байте вертикально (MSB снизу), столбцами сверху вниз слева направо: [data_0, ...data_n]
+- 8x Vertical Row - 8 пикселей в байте вертикально (MSB снизу), строками слева направо сверху вниз: [data_0, ...data_n] Подходит для GyverOLED
+- GyverGFX BitMap - 8 пикселей вертикально (MSB снизу), столбцами сверху вниз слева направо: [widthLSB, widthMSB, heightLSB, heightMSB, data_0, ...data_n]
 - GyverGFX BitPack - сжатый формат*: [widthLSB, widthMSB, heightLSB, heightMSB, lenLSB, lenMSB, data_0, ...data_n]
 - GyverGFX Image - программа выберет лёгкий между BitMap и BitPack: [0 map | 1 pack, x, x, x, x, data_0, ...data_n]
 - Grayscale - 1 пиксель в байте, оттенки серого
-- RGB888 - 1 пиксель на 3 байта (24 бит RGB) [r0, g0, b0, ...]
-- RGB565 - 1 пиксель на 2 байта (16 бит RGB) [rrrrrggggggbbbbb, ...], тип uint16
-- RGB233 - 1 пиксель в байте (8 бит RGB) [rrgggbbb]
+- RGB888 - 1 пиксель на 3 байта (24 бит RGB): [r0, g0, b0, ...]
+- RGB565 - 1 пиксель на 2 байта (16 бит RGB): [rrrrrggggggbbbbb, ...] тип uint16_t
+- RGB233 - 1 пиксель в байте (8 бит RGB): [rrgggbbb, ...]
 
 Редактор
 - Действия кнопок мыши при включенном редакторе: ЛКМ - добавить точку, ПКМ - стереть точку, СКМ - отменить изменения на слое редактора

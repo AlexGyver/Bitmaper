@@ -5,7 +5,8 @@ export const processes = {
     names: [
         '1 pix/byte',
         '8x Horizontal',
-        '8x Vertical',
+        '8x Vertical Col',
+        '8x Vertical Row',
         'GyverGFX Image',
         'GyverGFX BitMap',
         'GyverGFX BitPack',
@@ -15,6 +16,7 @@ export const processes = {
         'RGB233',
     ],
     prefix: [
+        'const uint8_t',
         'const uint8_t',
         'const uint8_t',
         'const uint8_t',
@@ -29,7 +31,8 @@ export const processes = {
     extension: [
         '1p',
         '8h',
-        '8v',
+        '8vc',
+        '8vr',
         'img',
         'map',
         'pack',
@@ -41,7 +44,8 @@ export const processes = {
     func: [
         make1bit,
         make8horiz,
-        make8vert,
+        make8vert_col,
+        make8vert_row,
         makeImage,
         makeBitmap,
         makeBitpack,
@@ -51,6 +55,7 @@ export const processes = {
         makeRGB233,
     ],
     mult: [
+        1,
         1,
         1,
         1,
@@ -83,7 +88,7 @@ function make8horiz(m) {
     }
     return data;
 }
-function make8vert(m) {
+function make8vert_col(m) {
     let data = [];
     let chunk = Math.ceil(m.H / 8);
     for (let x = 0; x < m.W; x++) {
@@ -166,7 +171,7 @@ function makeBitpack(m) {
     return data;
 }
 function makeBitmap(m) {
-    return [(m.W & 0xff), ((m.W >> 8) & 0xff), (m.H & 0xff), ((m.H >> 8) & 0xff)].concat(make8vert_row(m));
+    return [(m.W & 0xff), ((m.W >> 8) & 0xff), (m.H & 0xff), ((m.H >> 8) & 0xff)].concat(make8vert_col(m));
 }
 function makeImage(m) {
     let mapsize = Math.ceil(m.H / 8) * m.W + 4;
