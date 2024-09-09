@@ -27,7 +27,7 @@
 - `8x Vertical Col` - 8 пикселей в байте вертикально (MSB снизу), столбцами сверху вниз слева направо: [data_0, ...data_n]
 - `8x Vertical Row` - 8 пикселей в байте вертикально (MSB снизу), строками слева направо сверху вниз: [data_0, ...data_n] **Подходит для GyverOLED**
 - `GyverGFX BitMap` - 8 пикселей вертикально (MSB снизу), столбцами сверху вниз слева направо: [widthLSB, widthMSB, heightLSB, heightMSB, data_0, ...data_n]
-- `GyverGFX BitPack` - сжатый формат*: [widthLSB, widthMSB, heightLSB, heightMSB, lenLSB, lenMSB, data_0, ...data_n]
+- `GyverGFX BitPack` - сжатый формат*: [widthLSB, widthMSB, heightLSB, heightMSB, data_0, ...data_n]
 - `GyverGFX Image` - программа выберет лёгкий между BitMap и BitPack: [0 map | 1 pack, x, x, x, x, data_0, ...data_n]
 - `Grayscale` - 1 пиксель в байте, оттенки серого
 - `RGB888` - 1 пиксель на 3 байта (24 бит RGB): [r0, g0, b0, ...]

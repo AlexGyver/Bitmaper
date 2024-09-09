@@ -119,7 +119,7 @@ function make8vert_row(m) {
     return data;
 }
 function makeBitpack(m) {
-    let data = [(m.W & 0xff), (m.W >> 8) & 0xff, (m.H & 0xff), (m.H >> 8) & 0xff, 0, 0];
+    let data = [(m.W & 0xff), (m.W >> 8) & 0xff, (m.H & 0xff), (m.H >> 8) & 0xff];
     let i = 0, value = 0, shift = 0;
 
     let push = () => {
@@ -165,9 +165,6 @@ function makeBitpack(m) {
     }
     if (i) push();
 
-    let len = data.length - 4;
-    data[4] = len & 0xff;
-    data[5] = (len >> 8) & 0xff;
     return data;
 }
 function makeBitmap(m) {
