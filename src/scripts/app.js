@@ -22,7 +22,7 @@ const displayModes = [
 ];
 
 async function file_h(file) {
-    if (file instanceof File) {
+    if (file instanceof File || typeof file === 'string') {
         files = null;
         await processFile(file);
     } else if (file instanceof FileList) {
@@ -51,7 +51,7 @@ async function link_h(link) {
 }
 
 function resize_h() {
-    let wh = [base_ui.get('width'), base_ui.get('height')];
+    let wh = [base_ui.width, base_ui.height];
     canvas.resize(wh[0], wh[1]);
     editor.resize(wh[0], wh[1]);
     if (Math.max(wh[0], wh[1]) > 500) filt_ui.set('preview', false);
@@ -70,18 +70,18 @@ function update_h() {
 
 function update() {
     if (image.image) {
-        let mode = base_ui.get('mode');
+        let mode = base_ui.mode;
 
         image.render(
             canvas,
-            base_ui.get('rotate'),
-            filt_ui.get('invert_b'),
+            base_ui.rotate,
+            filt_ui.invert_b,
             {
-                invert: displayModes[filt_ui.get('display')].back ^ filt_ui.get('invert'),
-                brightness: filt_ui.get('brightness'),
-                contrast: filt_ui.get('contrast'),
-                saturate: filt_ui.get('saturate'),
-                blur: filt_ui.get('blur'),
+                invert: displayModes[filt_ui.display].back ^ filt_ui.invert,
+                brightness: filt_ui.brightness,
+                contrast: filt_ui.contrast,
+                saturate: filt_ui.saturate,
+                blur: filt_ui.blur,
                 grayscale: mode == 2 ? 0 : 100,
             }
         );
@@ -94,20 +94,20 @@ function update() {
         }
 
         if (mode <= 1) {
-            if (filt_ui.get('edges')) edges_simple(canvas.matrix, canvas.W, canvas.H);
-            if (filt_ui.get('sobel')) edges_sobel(canvas.matrix, canvas.W, canvas.H, filt_ui.get('sobel'));
-            if (filt_ui.get('dither')) dither(canvas.matrix, canvas.W, canvas.H);
-            if (mode == 0) threshold(canvas.matrix, filt_ui.get('threshold') * 2.56);
-            if (filt_ui.get('median')) edges_median(canvas.matrix, canvas.W, canvas.H);
+            if (filt_ui.edges) edges_simple(canvas.matrix, canvas.W, canvas.H);
+            if (filt_ui.sobel) edges_sobel(canvas.matrix, canvas.W, canvas.H, filt_ui.sobel);
+            if (filt_ui.dither) dither(canvas.matrix, canvas.W, canvas.H);
+            if (mode == 0) threshold(canvas.matrix, filt_ui.threshold * 2.56);
+            if (filt_ui.median) edges_median(canvas.matrix, canvas.W, canvas.H);
         }
     }
 }
 
 function render() {
     canvas.merge(editor);
-    canvas.render(filt_ui.get('grid'));
+    canvas.render(filt_ui.grid);
 
-    let result = proc.makeCode(canvas, base_ui.get('process'), base_ui.get('name'));
+    let result = proc.makeCode(canvas, base_ui.process, base_ui.name);
     base_ui.set('code', result.code);
 
     let info = `${canvas.W}x${canvas.H} (${result.size} bytes)<br>`;
@@ -117,16 +117,16 @@ function render() {
 
 function show() {
     image.show(canvas,
-        base_ui.get('rotate'),
-        displayModes[filt_ui.get('display')].back ^ filt_ui.get('invert_b'),
+        base_ui.rotate,
+        displayModes[filt_ui.display].back ^ filt_ui.invert_b,
         {
-            invert: filt_ui.get('invert'),
+            invert: filt_ui.invert,
         }
     );
 }
 
 function display_h() {
-    let colors = displayModes[filt_ui.get('display')];
+    let colors = displayModes[filt_ui.display];
     canvas.setColors(colors.active, colors.back);
     update_h();
 }
@@ -175,7 +175,7 @@ function btn_to_val(btn) {
     return (btn == 0) ? 1 : (btn == 1 ? 0 : -1);
 }
 function click_h(v, button) {
-    if (filt_ui.get('editor')) {
+    if (filt_ui.editor) {
         editor.set(v.x, v.y, btn_to_val(button));
         update_h();
     }
@@ -183,7 +183,7 @@ function click_h(v, button) {
 
 // ============== MOUSE ==============
 function drag_h(v, button) {
-    if (filt_ui.get('editor')) {
+    if (filt_ui.editor) {
         editor.set(v.block.x, v.block.y, btn_to_val(button));
         update_h();
         return;
@@ -191,21 +191,21 @@ function drag_h(v, button) {
 
     editor.clear();
     image.pan(v.dx, v.dy, v.release);
-    if (filt_ui.get('preview') || v.release) {
+    if (filt_ui.preview || v.release) {
         update_h();
     } else {
         show();
     }
 }
 function wheel_h(v) {
-    if (filt_ui.get('editor')) {
+    if (filt_ui.editor) {
         return;
     }
     timer.stop();
     editor.clear();
     image.scale(v);
 
-    if (filt_ui.get('preview')) {
+    if (filt_ui.preview) {
         update_h();
     } else {
         show();
@@ -215,7 +215,7 @@ function wheel_h(v) {
 function rotate_h() {
     editor.clear();
 
-    if (filt_ui.get('preview')) {
+    if (filt_ui.preview) {
         update_h();
     } else {
         show();
@@ -236,8 +236,8 @@ async function bulk_h() {
     let str = '';
     let idx = 0;
     let size = 0;
-    let process = base_ui.get('process');
-    let name = base_ui.get('name');
+    let process = base_ui.process;
+    let name = base_ui.name;
     let names = '';
     let offset = Object.assign({}, image.offset);
 
@@ -253,7 +253,7 @@ async function bulk_h() {
         image.setOffset(offset);
         update();
         canvas.merge(editor);
-        canvas.render(filt_ui.get('grid'));
+        canvas.render(filt_ui.grid);
 
         let result = proc.makeCode(canvas, process, name + '_' + idx);
         if (idx) {
@@ -276,16 +276,16 @@ async function bulk_h() {
 
 // ============== SAVE ==============
 function copy_h() {
-    navigator.clipboard.writeText(base_ui.get('code'));
+    navigator.clipboard.writeText(base_ui.code);
 }
 function saveH_h() {
-    proc.downloadCode(canvas, base_ui.get('process'), base_ui.get('name'));
+    proc.downloadCode(canvas, base_ui.process, base_ui.name);
 }
 function saveBin_h() {
-    proc.downloadBin(canvas, base_ui.get('process'), base_ui.get('name'));
+    proc.downloadBin(canvas, base_ui.process, base_ui.name);
 }
 function send_h() {
-    let blob = proc.makeBlob(canvas, base_ui.get('process'));
+    let blob = proc.makeBlob(canvas, base_ui.process);
     let formData = new FormData();
     formData.append('bitmap', blob);
 
@@ -297,7 +297,7 @@ function send_h() {
 function png_h() {
     let link = document.createElement('a');
     link.href = canvas.cv.toDataURL('image/png');
-    link.download = base_ui.get('name') + '.png';
+    link.download = base_ui.name + '.png';
     link.click();
 }
 
