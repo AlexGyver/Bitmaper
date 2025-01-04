@@ -15,6 +15,7 @@ let editor = new Matrix();
 let timer = new Timer();
 let files = null;
 let cur_lang = 0;
+let prev_s = 0;
 
 const displayModes = [
     { active: '#478be6', back: 0 },
@@ -40,13 +41,13 @@ async function processFile(file) {
         return;
     }
     editor.clear();
-    base_ui.set('name', image.name);
+    base_ui.name = image.name;
     update_h();
 }
 async function link_h(link) {
     if (link.length) {
         await file_h(link);
-        base_ui.set('link', '');
+        base_ui.link = '';
     }
 }
 
@@ -54,7 +55,7 @@ function resize_h() {
     let wh = [base_ui.width, base_ui.height];
     canvas.resize(wh[0], wh[1]);
     editor.resize(wh[0], wh[1]);
-    if (Math.max(wh[0], wh[1]) > 500) filt_ui.set('preview', false);
+    if (Math.max(wh[0], wh[1]) > 500) filt_ui.preview = false;
     update_h();
 }
 
@@ -70,7 +71,6 @@ function update_h() {
 
 function update() {
     if (image.image) {
-        let mode = base_ui.mode;
 
         image.render(
             canvas,
@@ -82,22 +82,22 @@ function update() {
                 contrast: filt_ui.contrast,
                 saturate: filt_ui.saturate,
                 blur: filt_ui.blur,
-                grayscale: mode == 2 ? 0 : 100,
+                grayscale: base_ui.mode == 2 ? 0 : 100,
             }
         );
 
         // grayscale
-        if (mode != 2) {
+        if (base_ui.mode != 2) {
             for (let i = 0; i < canvas.matrix.length; i++) {
                 canvas.matrix[i] &= 0xff;
             }
         }
 
-        if (mode <= 1) {
+        if (base_ui.mode <= 1) {
             if (filt_ui.edges) edges_simple(canvas.matrix, canvas.W, canvas.H);
             if (filt_ui.sobel) edges_sobel(canvas.matrix, canvas.W, canvas.H, filt_ui.sobel);
             if (filt_ui.dither) dither(canvas.matrix, canvas.W, canvas.H);
-            if (mode == 0) threshold(canvas.matrix, filt_ui.threshold * 2.56);
+            if (base_ui.mode == 0) threshold(canvas.matrix, filt_ui.threshold * 2.56);
             if (filt_ui.median) edges_median(canvas.matrix, canvas.W, canvas.H);
         }
     }
@@ -106,13 +106,16 @@ function update() {
 function render() {
     canvas.merge(editor);
     canvas.render(filt_ui.grid);
+    process();
+}
 
+function process() {
     let result = proc.makeCode(canvas, base_ui.process, base_ui.name);
-    base_ui.set('code', result.code);
+    base_ui.code = result.code;
 
     let info = `${canvas.W}x${canvas.H} (${result.size} bytes)<br>`;
     info += Math.round(canvas.matrix.filter(v => v).length / canvas.matrix.length * 100) + '% pixels on'
-    base_ui.set('result', info);
+    base_ui.result = info;
 }
 
 function show() {
@@ -140,10 +143,14 @@ function mode_h(mode) {
     filt_ui.control('threshold').display(mode == 0);
     filt_ui.control('editor').display(mode == 0);
 
-    base_ui.set('process', (mode == 0) ? 0 : (mode == 1 ? 7 : 8));
+    base_ui.process = (mode == 0) ? 0 : (mode == 1 ? 7 : 8);
     canvas.setMode(mode);
     resetFilt();
     reset_h();
+    update_h();
+}
+
+function process_h(p) {
     update_h();
 }
 
@@ -197,10 +204,12 @@ function drag_h(v, button) {
         show();
     }
 }
+function scale_h(v) {
+    wheel_h(prev_s < v ? 1 : -1);
+    prev_s = v;
+}
 function wheel_h(v) {
-    if (filt_ui.editor) {
-        return;
-    }
+    if (filt_ui.editor) return;
     timer.stop();
     editor.clear();
     image.scale(v);
@@ -242,7 +251,7 @@ async function bulk_h() {
     let offset = Object.assign({}, image.offset);
 
     for (let file of files) {
-        base_ui.set('result', 'Bulk process: ' + Math.round(idx / files.length * 100) + '%');
+        base_ui.result = 'Bulk process: ' + Math.round(idx / files.length * 100) + '%';
         try {
             await image.load(file);
         } catch (e) {
@@ -270,8 +279,8 @@ async function bulk_h() {
     str += `${proc.processes.prefix[process]}* const ${name}_list_pgm[] PROGMEM = {\r\n\t${names}\r\n};\r\n\r\n`;
     str += `${proc.processes.prefix[process]}* const ${name}_list[] = {\r\n\t${names}\r\n};\r\n\r\n`;
 
-    base_ui.set('code', str);
-    base_ui.set('result', 'Encoded ' + idx + ' files<br>' + (size / 1024.0).toFixed(2) + ' kB');
+    base_ui.code = str;
+    base_ui.result = 'Encoded ' + idx + ' files<br>' + (size / 1024.0).toFixed(2) + ' kB';
 }
 
 // ============== SAVE ==============
@@ -302,7 +311,7 @@ function png_h() {
 }
 
 function lang_h(v) {
-    base_ui.set('lang', v);
+    base_ui.lang = v;
     base_ui.setLabels(lang[v].base);
     filt_ui.setLabels(lang[v].filters);
     filt_ui.control('display').options = lang[v].display;
@@ -359,15 +368,18 @@ document.addEventListener("DOMContentLoaded", () => {
         .addNumber('width', '', 128, 1, resize_h)
         .addNumber('height', '', 64, 1, resize_h)
         .addButton('fit', '', fit_h)
+        .addRange('scale', '', 0, -300, 300, 1, scale_h)
         .addRange('rotate', '', 0, -180, 180, 5, rotate_h)
         .addSelect('mode', '', ['Mono', 'Gray', 'RGB'], mode_h)
-        .addSelect('process', '', proc.processes.names, update_h)
+        .addSelect('process', '', proc.processes.names, process_h)
         .addHTML('result', '', '')
         .addButton('bulk', '', bulk_h)
         .addArea('code', '', '')
         .addButtons(buttons)
         .addSelect('lang', 'Language', ['English', 'Russian'], lang_h)
         .addButtons({ info: ['', info_h], github: ['GitHub', git_h] })
+
+    base_ui.control('scale').input.addEventListener('mouseup', () => base_ui.scale = 0);
 
     filt_ui = new UI({ title: "Filters", theme: 'dark', parent: filters })
         .addSelect('display', '', [], display_h)

@@ -1,6 +1,6 @@
 const path = require('path');
 const webpack = require("webpack");
-var PACKAGE = require('./package.json');
+const PACKAGE = require('./package.json');
 
 const ReplaceHashInFileWebpackPlugin = require('replace-hash-in-file-webpack-plugin');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
@@ -16,7 +16,7 @@ module.exports = {
 
     output: {
         filename: 'script.js',
-        path: path.resolve(__dirname, 'dist/host'),
+        path: path.resolve(__dirname, 'index'),
         clean: true,
         publicPath: '',
     },
@@ -64,7 +64,7 @@ module.exports = {
             ],
         }),
         new ReplaceHashInFileWebpackPlugin([{
-            dir: 'dist/host',
+            dir: 'index',
             files: ['sw.js'],
             rules: [{
                 search: /@cachename/,

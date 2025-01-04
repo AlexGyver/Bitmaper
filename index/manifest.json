@@ -1,0 +1,18 @@
+{
+    "theme_color": "#478be6",
+    "background_color": "#1C2128",
+    "display": "standalone",
+    "start_url": ".",
+    "name": "Bitmaper",
+    "short_name": "Bitmaper",
+    "description": "Image to bitmap converter",
+    "orientation": "portrait",
+    "icons": [
+        {
+            "src": "icon.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any maskable"
+        }
+    ]
+}
