@@ -239,7 +239,10 @@ ${(type >= 3 && type <= 5) ? '#include <GyverGFX.h>' : ''}
 
 `;
     str += code.code;
+    downloadTextH(name, str);
+}
 
+export function downloadTextH(name, str) {
     let enc = new TextEncoder();
     let bytes = enc.encode(str);
     let blob = new Blob([bytes], { type: "text/plain" });

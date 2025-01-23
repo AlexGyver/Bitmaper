@@ -281,6 +281,22 @@ async function bulk_h() {
 
     base_ui.code = str;
     base_ui.result = 'Encoded ' + idx + ' files<br>' + (size / 1024.0).toFixed(2) + ' kB';
+    return str;
+}
+
+async function bulkH_h() {
+    let bulk = await bulk_h();
+    if (!bulk) return;
+
+    let str = `#pragma once
+    #include <Arduino.h>
+    ${(base_ui.process >= 3 && base_ui.process <= 5) ? '#include <GyverGFX.h>' : ''}
+    
+    // Bitmaper bulk process ${files.length} files
+    
+    `;
+    str += bulk;
+    proc.downloadTextH('bulk', str);
 }
 
 // ============== SAVE ==============
@@ -373,7 +389,7 @@ document.addEventListener("DOMContentLoaded", () => {
         .addSelect('mode', '', ['Mono', 'Gray', 'RGB'], mode_h)
         .addSelect('process', '', proc.processes.names, process_h)
         .addHTML('result', '', '')
-        .addButton('bulk', '', bulk_h)
+        .addButtons({ bulk: ['', bulk_h], bulk_h: ['.h', bulkH_h] })
         .addArea('code', '', '')
         .addButtons(buttons)
         .addSelect('lang', 'Language', ['English', 'Russian'], lang_h)
