@@ -2,7 +2,7 @@
 Программа для преобразования изображений в bitmap
 
 ## Как запустить
-- Веб-версия - https://alexgyver.github.io/Bitmaper/, можно установить как веб-приложение
+- Веб-версия - https://alexgyver.github.io/Bitmaper/index/, можно установить как веб-приложение
 - Релиз [HTML версия](https://github.com/AlexGyver/Bitmaper/releases/latest/download/bitmaper.html) - открывать в браузере
 - Релиз [.h версия](https://github.com/AlexGyver/Bitmaper/releases/latest/download/bitmaper.h) - для вставки в ESP проект с сервером. Смотри пример в папке arduino
 
