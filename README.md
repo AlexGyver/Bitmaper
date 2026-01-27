@@ -1,6 +1,9 @@
 # Bitmaper
 Программа для преобразования изображений в bitmap
 
+|⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️<br><br>**ПОЯВИЛАСЬ НОВАЯ ВЕРСИЯ - [BITMAPER2](https://alexgyver.github.io/Bitmaper2/)**<br><br>⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️|
+| --- |
+
 ## Как запустить
 - Веб-версия - https://alexgyver.github.io/Bitmaper/, можно установить как веб-приложение
 - Релиз [HTML версия](https://github.com/AlexGyver/Bitmaper/releases/latest/download/bitmaper.html) - открывать в браузере
